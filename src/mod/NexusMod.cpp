@@ -25,9 +25,25 @@ bool NexusMod::load() {
 
 bool NexusMod::enable() {
     auto& self = getSelf();
-    self.getLogger().info("NexusClient enabling — registering {} modules...", "30+");
+    self.getLogger().info("NexusClient enabling...");
+    self.getLogger().info("Mod ID: {}", self.getId());
+    self.getLogger().info("Mod Name: {}", self.getName());
 
-    // Register all modules into LeviLauncher's mod menu
+    // Test: register one simple module first
+    bool testResult = pl::modmenu::ModuleBuilder("nexus_test", "NexusClient Test")
+        .description("Test module to verify registration works")
+        .modId(std::string(self.getId()))
+        .defaultEnabled(false)
+        .config("test_slider", "Test Slider", pl::modmenu::ConfigType::SliderFloat, "5.0", "0.0", "10.0")
+        .config("test_toggle", "Test Toggle", pl::modmenu::ConfigType::Toggle, "true")
+        .onToggle([this](std::string_view, bool e) {
+            getSelf().getLogger().info("Test module toggled: {}", e);
+        })
+        .registerModule();
+
+    self.getLogger().info("Test module registered: {}", testResult ? "SUCCESS" : "FAILED");
+
+    // Now register all real modules using the ACTUAL mod ID
     registerCombatModules();
     registerMovementModules();
     registerRenderModules();

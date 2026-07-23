@@ -11,9 +11,11 @@ static int s_killauraCPS = 12;
 static float s_reachDistance = 4.0f;
 
 void NexusMod::registerCombatModules() {
+    std::string mid(getSelf().getId());
+
     ModuleBuilder("killaura", "KillAura")
         .description("Automatically attacks nearby entities")
-        .modId("nexus_client")
+        .modId(mid)
         .config("range", "Range", ConfigType::SliderFloat, "3.5", "1.0", "7.0")
         .config("cps", "CPS", ConfigType::SliderInt, "12", "1", "20")
         .config("players", "Target Players", ConfigType::Toggle, "true")
