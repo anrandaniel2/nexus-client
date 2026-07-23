@@ -33,15 +33,7 @@ FetchContent_Declare(magic_enum
     GIT_REPOSITORY https://github.com/Neargye/magic_enum.git
     GIT_TAG v0.9.7
 )
-FetchContent_Declare(fmt
-    GIT_REPOSITORY https://github.com/fmtlib/fmt.git
-    GIT_TAG 11.2.0
-)
-set(FMT_DOC OFF CACHE BOOL "" FORCE)
-set(FMT_TEST OFF CACHE BOOL "" FORCE)
-set(FMT_INSTALL OFF CACHE BOOL "" FORCE)
-
-FetchContent_MakeAvailable(preloader_android nlohmann_json boost_pfr magic_enum fmt)
+FetchContent_MakeAvailable(preloader_android nlohmann_json boost_pfr magic_enum)
 FetchContent_GetProperties(preloader_android)
 set(LEVI_PRELOADER_INCLUDE_DIR "${preloader_android_SOURCE_DIR}/include")
 
@@ -81,7 +73,6 @@ target_link_libraries(${MOD_LIBRARY_NAME} PRIVATE
     nlohmann_json::nlohmann_json
     Boost::pfr
     magic_enum::magic_enum
-    fmt::fmt
 )
 if(TARGET preloader)
     target_link_libraries(${MOD_LIBRARY_NAME} PRIVATE preloader)
