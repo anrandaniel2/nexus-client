@@ -5,6 +5,9 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,16 +39,26 @@ jobs:
     - name: Package .levipack
       run: cmake --build build-arm64 --target levi_package
 
-    - name: Upload .levipack
+    - name: Copy outputs
+      run: |
+        mkdir -p output
+        cp build-arm64/*.levipack output/ || true
+        cp build-arm64/libnexus_client.so output/ || true
+        ls -la output/
+
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: NexusClient-levipack
-        path: build-arm64/*.levipack
+        name: NexusClient
+        path: output/
         if-no-files-found: warn
 
-    - name: Upload .so
-      uses: actions/upload-artifact@v4
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
       with:
-        name: libclient-arm64
-        path: build-arm64/libnexus_client.so
-        if-no-files-found: warn
+        tag_name: build-${{ github.run_number }}
+        name: NexusClient Build #${{ github.run_number }}
+        files: output/*
+        make_latest: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
