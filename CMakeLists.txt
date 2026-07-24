@@ -103,7 +103,7 @@ if(NOT CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a" AND NOT CMAKE_ANDROID_ARCH_AB
     message(FATAL_ERROR "Unsupported Android ABI: ${CMAKE_ANDROID_ARCH_ABI}")
 endif()
 
-option(LEVI_LINK_PRELOADER "Build and link the preloader target instead of leaving SDK symbols for runtime lookup" ON)
+option(LEVI_LINK_PRELOADER "Build and link the preloader target" ON)
 if(LEVI_LINK_PRELOADER AND NOT TARGET preloader)
     add_subdirectory("${preloader_android_SOURCE_DIR}" "${CMAKE_BINARY_DIR}/_preloader_android")
 endif()

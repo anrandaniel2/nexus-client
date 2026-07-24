@@ -2,6 +2,7 @@
 
 #include <pl/ModMenu.hpp>
 #include <filesystem>
+#include <thread>
 
 namespace nexus {
 
@@ -53,93 +54,56 @@ bool MyMod::enable() {
 
     self.getLogger().info("Config message: {}", mConfig.message);
 
-    // Register modules — don't set modId, let ScopedModMenuOwner handle it
-    using namespace pl::modmenu;
+    // Register modules after a short delay so enable() returns first
+    std::thread([&self]() {
+        // Wait for enable lifecycle to complete
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    {
-        ModuleInfo info;
-        info.moduleId = "killaura";
-        info.displayName = "KillAura";
-        info.description = "Automatically attacks nearby entities";
-        info.defaultEnabled = false;
-        info.configs.push_back({"range", "Range", ConfigType::SliderFloat, "3.5", "1.0", "7.0", ""});
-        info.configs.push_back({"cps", "CPS", ConfigType::SliderInt, "12", "1", "20", ""});
-        info.configs.push_back({"players", "Target Players", ConfigType::Toggle, "true", "", "", ""});
-        bool ok = registerModule(info);
-        self.getLogger().info("KillAura registered: {}", ok);
-    }
-    {
-        ModuleInfo info;
-        info.moduleId = "reach";
-        info.displayName = "Reach";
-        info.description = "Extends attack reach distance";
-        info.configs.push_back({"distance", "Distance", ConfigType::SliderFloat, "4.0", "3.0", "7.0", ""});
-        registerModule(info);
-    }
-    {
-        ModuleInfo info;
-        info.moduleId = "fly";
-        info.displayName = "Fly";
-        info.description = "Allows free flight";
-        info.configs.push_back({"speed", "Speed", ConfigType::SliderFloat, "2.0", "0.5", "10.0", ""});
-        registerModule(info);
-    }
-    {
-        ModuleInfo info;
-        info.moduleId = "speed";
-        info.displayName = "Speed";
-        info.description = "Increases movement speed";
-        info.configs.push_back({"multiplier", "Multiplier", ConfigType::SliderFloat, "1.5", "1.0", "5.0", ""});
-        registerModule(info);
-    }
-    {
-        ModuleInfo info;
-        info.moduleId = "sprint";
-        info.displayName = "Sprint";
-        info.description = "Automatically sprints";
-        registerModule(info);
-    }
-    {
-        ModuleInfo info;
-        info.moduleId = "nofall";
-        info.displayName = "NoFall";
-        info.description = "Prevents fall damage";
-        registerModule(info);
-    }
-    {
-        ModuleInfo info;
-        info.moduleId = "esp";
-        info.displayName = "ESP";
-        info.description = "Shows player info through walls";
-        info.configs.push_back({"tracers", "Tracers", ConfigType::Toggle, "false", "", "", ""});
-        info.configs.push_back({"nametags", "Nametags", ConfigType::Toggle, "true", "", "", ""});
-        registerModule(info);
-    }
-    {
-        ModuleInfo info;
-        info.moduleId = "fullbright";
-        info.displayName = "Fullbright";
-        info.description = "Maximum brightness everywhere";
-        registerModule(info);
-    }
-    {
-        ModuleInfo info;
-        info.moduleId = "scaffold";
-        info.displayName = "Scaffold";
-        info.description = "Auto-places blocks under you";
-        info.configs.push_back({"tower", "Tower Mode", ConfigType::Toggle, "true", "", "", ""});
-        registerModule(info);
-    }
-    {
-        ModuleInfo info;
-        info.moduleId = "xray";
-        info.displayName = "XRay";
-        info.description = "See ores through blocks";
-        info.configs.push_back({"opacity", "Block Opacity", ConfigType::SliderFloat, "0.3", "0.0", "1.0", ""});
-        registerModule(info);
-    }
+        using namespace pl::modmenu;
 
-    self.getLogger().info("NexusClient modules registered!");
+        auto reg = [&self](const char* id, const char* name, const char* desc,
+                           std::vector<ConfigEntry> configs = {}) {
+            ModuleInfo info;
+            info.moduleId = id;
+            info.displayName = name;
+            info.description = desc;
+            info.modId = std::string(self.getId());
+            info.configs = std::move(configs);
+            bool ok = registerModule(info);
+            self.getLogger().info("{} registered: {}", name, ok);
+        };
+
+        reg("killaura", "KillAura", "Auto-attacks nearby entities", {
+            {"range", "Range", ConfigType::SliderFloat, "3.5", "1.0", "7.0", ""},
+            {"cps", "CPS", ConfigType::SliderInt, "12", "1", "20", ""},
+            {"players", "Target Players", ConfigType::Toggle, "true", "", "", ""},
+        });
+        reg("reach", "Reach", "Extends attack reach", {
+            {"distance", "Distance", ConfigType::SliderFloat, "4.0", "3.0", "7.0", ""},
+        });
+        reg("fly", "Fly", "Allows free flight", {
+            {"speed", "Speed", ConfigType::SliderFloat, "2.0", "0.5", "10.0", ""},
+        });
+        reg("speed", "Speed", "Increases movement speed", {
+            {"multiplier", "Multiplier", ConfigType::SliderFloat, "1.5", "1.0", "5.0", ""},
+        });
+        reg("sprint", "Sprint", "Automatically sprints");
+        reg("nofall", "NoFall", "Prevents fall damage");
+        reg("esp", "ESP", "Shows player info through walls", {
+            {"tracers", "Tracers", ConfigType::Toggle, "false", "", "", ""},
+            {"nametags", "Nametags", ConfigType::Toggle, "true", "", "", ""},
+        });
+        reg("fullbright", "Fullbright", "Maximum brightness");
+        reg("scaffold", "Scaffold", "Auto-places blocks under you", {
+            {"tower", "Tower Mode", ConfigType::Toggle, "true", "", "", ""},
+        });
+        reg("xray", "XRay", "See ores through blocks", {
+            {"opacity", "Opacity", ConfigType::SliderFloat, "0.3", "0.0", "1.0", ""},
+        });
+
+        self.getLogger().info("NexusClient: all modules registered!");
+    }).detach();
+
     return true;
 }
 
