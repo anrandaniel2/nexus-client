@@ -1,5 +1,6 @@
 #include "mod/MyMod.h"
 
+#include <pl/ModMenu.hpp>
 #include <filesystem>
 
 namespace nexus {
@@ -51,6 +52,17 @@ bool MyMod::enable() {
     }
 
     self.getLogger().info("Config message: {}", mConfig.message);
+
+    // Test: one module, no lambdas
+    pl::modmenu::ModuleInfo info;
+    info.moduleId = "test_module";
+    info.displayName = "Test Module";
+    info.description = "Testing if registerModule works";
+    info.modId = std::string(self.getId());
+    info.defaultEnabled = false;
+    bool ok = pl::modmenu::registerModule(info);
+    self.getLogger().info("registerModule returned: {}", ok);
+
     return true;
 }
 
