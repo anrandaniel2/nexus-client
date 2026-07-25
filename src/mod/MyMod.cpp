@@ -1,8 +1,6 @@
 #include "mod/MyMod.h"
 
-#include <pl/ModMenu.hpp>
 #include <filesystem>
-#include <thread>
 
 namespace nexus {
 
@@ -53,57 +51,6 @@ bool MyMod::enable() {
     }
 
     self.getLogger().info("Config message: {}", mConfig.message);
-
-    // Register modules after a short delay so enable() returns first
-    std::thread([&self]() {
-        // Wait for enable lifecycle to complete
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-        using namespace pl::modmenu;
-
-        auto reg = [&self](const char* id, const char* name, const char* desc,
-                           std::vector<ConfigEntry> configs = {}) {
-            ModuleInfo info;
-            info.moduleId = id;
-            info.displayName = name;
-            info.description = desc;
-            info.modId = std::string(self.getId());
-            info.configs = std::move(configs);
-            bool ok = registerModule(info);
-            self.getLogger().info("{} registered: {}", name, ok);
-        };
-
-        reg("killaura", "KillAura", "Auto-attacks nearby entities", {
-            {"range", "Range", ConfigType::SliderFloat, "3.5", "1.0", "7.0", ""},
-            {"cps", "CPS", ConfigType::SliderInt, "12", "1", "20", ""},
-            {"players", "Target Players", ConfigType::Toggle, "true", "", "", ""},
-        });
-        reg("reach", "Reach", "Extends attack reach", {
-            {"distance", "Distance", ConfigType::SliderFloat, "4.0", "3.0", "7.0", ""},
-        });
-        reg("fly", "Fly", "Allows free flight", {
-            {"speed", "Speed", ConfigType::SliderFloat, "2.0", "0.5", "10.0", ""},
-        });
-        reg("speed", "Speed", "Increases movement speed", {
-            {"multiplier", "Multiplier", ConfigType::SliderFloat, "1.5", "1.0", "5.0", ""},
-        });
-        reg("sprint", "Sprint", "Automatically sprints");
-        reg("nofall", "NoFall", "Prevents fall damage");
-        reg("esp", "ESP", "Shows player info through walls", {
-            {"tracers", "Tracers", ConfigType::Toggle, "false", "", "", ""},
-            {"nametags", "Nametags", ConfigType::Toggle, "true", "", "", ""},
-        });
-        reg("fullbright", "Fullbright", "Maximum brightness");
-        reg("scaffold", "Scaffold", "Auto-places blocks under you", {
-            {"tower", "Tower Mode", ConfigType::Toggle, "true", "", "", ""},
-        });
-        reg("xray", "XRay", "See ores through blocks", {
-            {"opacity", "Opacity", ConfigType::SliderFloat, "0.3", "0.0", "1.0", ""},
-        });
-
-        self.getLogger().info("NexusClient: all modules registered!");
-    }).detach();
-
     return true;
 }
 
