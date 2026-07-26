@@ -15,10 +15,7 @@ bool MyMod::load(pl::mod::ModContext &context) {
     std::filesystem::create_directories(context.dataDir(), ec);
     std::filesystem::create_directories(context.configDir(), ec);
     context.logger().info("Loaded {}", context.name());
-    return true;
-}
 
-bool MyMod::enable(pl::mod::ModContext &context) {
     using namespace pl::modmenu;
 
     auto reg = [&](const char* id, const char* name, const char* desc, std::vector<ConfigEntry> configs = {}) {
@@ -62,15 +59,20 @@ bool MyMod::enable(pl::mod::ModContext &context) {
     return true;
 }
 
+bool MyMod::enable(pl::mod::ModContext &context) {
+    context.logger().info("Enabled");
+    return true;
+}
+
 bool MyMod::disable(pl::mod::ModContext &context) {
-    using namespace pl::modmenu;
-    const char* ids[] = {"killaura","reach","fly","speed","sprint","nofall","esp","fullbright","scaffold","xray"};
-    for (auto id : ids) unregisterModule(id);
     context.logger().info("Disabled");
     return true;
 }
 
 bool MyMod::unload(pl::mod::ModContext &context) {
+    using namespace pl::modmenu;
+    const char* ids[] = {"killaura","reach","fly","speed","sprint","nofall","esp","fullbright","scaffold","xray"};
+    for (auto id : ids) unregisterModule(id);
     context.logger().info("Unloaded");
     return true;
 }
