@@ -10,70 +10,54 @@ MyMod &MyMod::instance() {
     return instance;
 }
 
-bool MyMod::load(pl::mod::ModContext &context) {
+MyMod::MyMod() : mSelf(*ll::mod::NativeMod::current()) {}
+
+bool MyMod::load() {
+    auto &self = getSelf();
+    self.getLogger().debug("Loading...");
+
     std::error_code ec;
-    std::filesystem::create_directories(context.dataDir(), ec);
-    std::filesystem::create_directories(context.configDir(), ec);
-    context.logger().info("Loaded {}", context.name());
+    std::filesystem::create_directories(self.getDataDir(), ec);
+    if (ec) {
+        self.getLogger().error("Failed to create data directory {}: {}", self.getDataDir().string(), ec.message());
+        return false;
+    }
+    std::filesystem::create_directories(self.getConfigDir(), ec);
+    if (ec) {
+        self.getLogger().error("Failed to create config directory {}: {}", self.getConfigDir().string(), ec.message());
+        return false;
+    }
 
-    using namespace pl::modmenu;
+    mConfigFile.emplace();
+    if (!mConfigFile->load()) {
+        self.getLogger().warn("Failed to load typed config");
+        return false;
+    }
+    mConfig = mConfigFile->value();
 
-    auto reg = [&](const char* id, const char* name, const char* desc, std::vector<ConfigEntry> configs = {}) {
-        ModuleInfo info;
-        info.moduleId = id;
-        info.displayName = name;
-        info.description = desc;
-        info.configs = std::move(configs);
-        bool ok = registerModule(info);
-        context.logger().info("register {} => {}", name, ok ? "ok" : "fail");
-    };
-
-    reg("killaura", "KillAura", "Automatically attacks nearby entities", {
-        {"range", "Range", ConfigType::SliderFloat, "3.5", "1.0", "7.0", ""},
-        {"cps", "CPS", ConfigType::SliderInt, "12", "1", "20", ""},
-        {"players", "Target Players", ConfigType::Toggle, "true", "", "", ""},
-    });
-    reg("reach", "Reach", "Extends attack reach distance", {
-        {"distance", "Distance", ConfigType::SliderFloat, "4.0", "3.0", "7.0", ""},
-    });
-    reg("fly", "Fly", "Allows free flight", {
-        {"speed", "Speed", ConfigType::SliderFloat, "2.0", "0.5", "10.0", ""},
-    });
-    reg("speed", "Speed", "Increases movement speed", {
-        {"multiplier", "Multiplier", ConfigType::SliderFloat, "1.5", "1.0", "5.0", ""},
-    });
-    reg("sprint", "Sprint", "Automatically sprints");
-    reg("nofall", "NoFall", "Prevents fall damage");
-    reg("esp", "ESP", "Shows player info through walls", {
-        {"tracers", "Tracers", ConfigType::Toggle, "false", "", "", ""},
-        {"nametags", "Nametags", ConfigType::Toggle, "true", "", "", ""},
-    });
-    reg("fullbright", "Fullbright", "Maximum brightness everywhere");
-    reg("scaffold", "Scaffold", "Auto-places blocks under you", {
-        {"tower", "Tower Mode", ConfigType::Toggle, "true", "", "", ""},
-    });
-    reg("xray", "XRay", "See ores through blocks", {
-        {"opacity", "Opacity", ConfigType::SliderFloat, "0.3", "0.0", "1.0", ""},
-    });
-
+    self.getLogger().info("Loaded {} from {}", self.getName(), self.getModDir().string());
     return true;
 }
 
-bool MyMod::enable(pl::mod::ModContext &context) {
-    context.logger().info("Enabled");
+bool MyMod::enable() {
+    const auto &config = mConfigFile->value();
+
+    return pl::modmenu::ModuleBuilder("nexus_client.hud", "NexusClient HUD")
+        .modId(getSelf().getId())
+        .description("Pure C++ lifecycle module with persistent typed config.")
+        .defaultEnabled(config.enabled)
+        .config("opacity", "Opacity", pl::modmenu::ConfigType::SliderInt,
+                "80", "0", "100")
+        .registerModule();
+}
+
+bool MyMod::disable() {
+    pl::modmenu::unregisterModule("nexus_client.hud");
     return true;
 }
 
-bool MyMod::disable(pl::mod::ModContext &context) {
-    context.logger().info("Disabled");
-    return true;
-}
-
-bool MyMod::unload(pl::mod::ModContext &context) {
-    using namespace pl::modmenu;
-    const char* ids[] = {"killaura","reach","fly","speed","sprint","nofall","esp","fullbright","scaffold","xray"};
-    for (auto id : ids) unregisterModule(id);
-    context.logger().info("Unloaded");
+bool MyMod::unload() {
+    mConfigFile.reset();
     return true;
 }
 
